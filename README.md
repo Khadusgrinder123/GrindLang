@@ -1,4 +1,4 @@
-GrindLang
+# GrindLang
 
 A mobile-focused compiled programming language with a custom IDE.
 
@@ -8,7 +8,7 @@ GrindLang is an experimental programming language designed around one idea:
 
 The project aims to build a compiled language with clean, familiar syntax, native mobile compatibility, and a lightweight custom IDE designed specifically for phones.
 
-Current Status
+## Current Status
 
 Very early development.
 
@@ -27,15 +27,15 @@ Right now, GrindLang is in the language development phase.
 
 The current implementation is being developed in Python as a bootstrap for the language. The long-term goal is for GrindLang to become self-hosted.
 
-V1 Goal
+## V1 Goal
 
 The first major version of GrindLang is focused on two things:
 
-Mobile compatibility
+### Mobile compatibility
 
 GrindLang should be able to work naturally on mobile devices instead of treating mobile as an afterthought.
 
-A lightweight custom IDE
+### A lightweight custom IDE
 
 The planned IDE will be built specifically for GrindLang and mobile devices.
 
@@ -45,75 +45,60 @@ No huge desktop-style development environment squeezed onto a phone.
 
 Just the tools needed to write, compile, and run GrindLang programs.
 
-Language Philosophy
+## Language Philosophy
 
 GrindLang is designed to have syntax that feels familiar to programmers coming from languages like C, while avoiding unnecessary complexity.
 
-Some current keywords include:
+### Keywords
 
-if
-else
-elif
+- `if`
+- `else`
+- `elif`
+- `loop`
+- `reps`
+- `keep`
+- `until`
+- `func`
+- `return`
+- `break`
+- `continue`
+- `class`
+- `let`
+- `const`
+- `sizeof`
+- `try`
+- `catch`
+- `throw`
+- `switch`
+- `case`
+- `default`
+- `import`
+- `show`
 
-loop
-reps
-keep
-until
+### Primitive Types
 
-func
-return
-break
-continue
+The language has explicit primitive types:
 
-class
+#### Integer Types
+- `tiny_int` → 8-bit integer
+- `small_int` → 16-bit integer
+- `mid_int` → 32-bit integer
+- `large_int` → 64-bit integer
 
-let
-const
-sizeof
+#### Floating Point Types
+- `tiny_flt` → 16-bit floating point
+- `small_flt` → 32-bit floating point
+- `mid_flt` → 64-bit floating point
+- `large_flt` → 128-bit floating point
 
-try
-catch
-throw
-
-switch
-case
-default
-
-import
-
-show
-
-The language also has explicit primitive types:
-
-tiny_int
-small_int
-mid_int
-large_int
-
-tiny_flt
-small_flt
-mid_flt
-large_flt
-
-bool
-char
-str
-
-These currently represent:
-
-tiny_int   -> 8-bit integer
-small_int  -> 16-bit integer
-mid_int    -> 32-bit integer
-large_int  -> 64-bit integer
-
-tiny_flt   -> 16-bit floating point
-small_flt  -> 32-bit floating point
-mid_flt    -> 64-bit floating point
-large_flt  -> 128-bit floating point
+#### Other Types
+- `bool`
+- `char`
+- `str`
 
 The language is still under active design, so syntax and features may change.
 
-Current Lexer
+## Current Lexer
 
 The lexer is currently the most developed part of the project.
 
@@ -131,30 +116,41 @@ It recognizes:
 - Newlines
 - Punctuation
 
-Current operators include:
+### Operators
 
-+   -   *   /
-=   &   !
-<   >
+#### Arithmetic Operators
+- `+`
+- `-`
+- `*`
+- `/`
 
-and:
+#### Logical Operators
+- `&` (AND)
+- `!` (NOT)
 
-+=
--=
-*=
-/=
+#### Comparison Operators
+- `<`
+- `>`
 
-==
->=
-<=
-!=
+#### Assignment Operators
+- `+=`
+- `-=`
+- `*=`
+- `/=`
 
-Development
+#### Equality Operators
+- `==`
+- `>=`
+- `<=`
+- `!=`
+
+## Development
 
 The current bootstrap implementation uses Python.
 
 The planned direction is:
 
+```
 GrindLang source
        |
      Lexer
@@ -166,10 +162,11 @@ GrindLang source
     Compiler
        |
    Native code
+```
 
 Eventually, GrindLang is intended to become self-hosted, meaning the compiler/toolchain will be written in GrindLang itself.
 
-Mobile First
+## Mobile First
 
 Mobile isn't simply another supported platform for GrindLang.
 
@@ -177,17 +174,19 @@ It is one of the project's primary design constraints.
 
 The long-term vision is to make it possible to:
 
+```
 Write code
    |
 Compile
    |
-Run
+  Run
+```
 
 directly on a mobile device using a purpose-built environment.
 
 The custom IDE is planned around this workflow.
 
-Experimental Project
+## Experimental Project
 
 GrindLang is currently an experiment.
 
@@ -199,9 +198,9 @@ Features will probably be redesigned.
 
 That's part of the project.
 
-Roadmap
+## Roadmap
 
-Phase 1: Language Foundation
+### Phase 1: Language Foundation
 
 - [x] Token system
 - [x] Keyword definitions
@@ -212,7 +211,7 @@ Phase 1: Language Foundation
 - [ ] AST
 - [ ] Error handling
 
-Phase 2: Compiler
+### Phase 2: Compiler
 
 - [ ] Code generation
 - [ ] Runtime
@@ -220,13 +219,13 @@ Phase 2: Compiler
 - [ ] Standard library
 - [ ] Native compilation
 
-Phase 3: Self Hosting
+### Phase 3: Self Hosting
 
 - [ ] Rewrite compiler components in GrindLang
 - [ ] Bootstrap compiler
 - [ ] Self-hosted toolchain
 
-Phase 4: Mobile IDE
+### Phase 4: Mobile IDE
 
 - [ ] Custom editor
 - [ ] Compiler integration
@@ -235,17 +234,17 @@ Phase 4: Mobile IDE
 - [ ] Mobile-friendly UI
 - [ ] Debugging tools
 
-Phase 5: V1
+### Phase 5: V1
 
 GrindLang + native mobile toolchain + custom mobile IDE
 
-Contributing
+## Contributing
 
 GrindLang is open source.
 
 The project is currently experimental, so contributions, ideas, bug reports, and discussions are welcome.
 
-License
+## License
 
 GrindLang is open source.
 
@@ -253,6 +252,6 @@ License information will be added as the project develops.
 
 ---
 
-GrindLang
+**GrindLang**
 
 Code without the desktop dependency.
