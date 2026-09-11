@@ -8,19 +8,13 @@ DoubleOP = TokenType.DOP()
 
 
 text = '''
-let tiny_int RED = 33
-let tiny_flt B = 3.4
-show B;
-show RED;
-show "hello world";
 if (2 > 1) {
-    show "right";
+    show "he";
 }
 '''
 line = 1
 scanned_text = []
 cursor = 0
-
 while cursor < len(text):
     char = text[cursor]
 
@@ -91,7 +85,9 @@ while cursor < len(text):
 
     raise ValueError(f"Unknown char {char}. Line {line}.")
 
-print(scanned_text)
-
 def ScannedText():
     return scanned_text
+
+
+def Cursor():
+    return cursor

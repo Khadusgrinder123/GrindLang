@@ -73,8 +73,8 @@ class TokenType:
             "[": "LSQUARE",
             "]": "RSQUARE",
             ":": "COLON",
-            ";": "SEMI_COLON",
-            "\n": "NEWLINE",
+            ";": "END_OF_STATEMENT",
+            "\n": "END_OF_STATEMENT",
             ",": "COMMA",
             ".": "DOT"
         }
@@ -82,11 +82,11 @@ class TokenType:
 
     def SOP(self):
         self.SingleOP = {
-            "+": "PLUS",
-            "-": "MINUS",
-            "*": "MUL",
-            "/": "DIV",
-            "=": "EQUALS",
+            "+": "+",
+            "-": "-",
+            "*": "*",
+            "/": "/",
+            "=": "EQUAL_TO",
             "&": "ADRESSOF",
             "!": "NOT",
             "<": "LESS_THAN",
