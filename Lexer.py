@@ -7,17 +7,14 @@ SingleOP = TokenType.SOP()
 DoubleOP = TokenType.DOP()
 
 
-text = '''
-if (2 > 1) {
-    show "he";
-}
-'''
+text = '''import "this.grind"'''
 line = 1
 scanned_text = []
 cursor = 0
 while cursor < len(text):
     char = text[cursor]
 
+    # white spaces and new lines
     if char.isspace():
         if char == "\n":
             scanned_text.append(NonLetters[char])
@@ -25,6 +22,7 @@ while cursor < len(text):
         cursor += 1
         continue
 
+    # string
     if char == '"':
         cursor += 1
         string_start = cursor
@@ -37,6 +35,7 @@ while cursor < len(text):
             cursor += 1
         continue
 
+    # for float or int
     if char.isdigit():
         number_start = cursor
         dot_count = 0
@@ -53,11 +52,11 @@ while cursor < len(text):
             if not number[-1].isdigit(): # checks what is after "."
                 raise ValueError(f"Invalid number {number}. Line {line}.")
 
-
         token_type = "FLOAT" if dot_count == 1 else "INTEGER"
         scanned_text.append(token_type + ":" + number)
         continue
 
+    # variable
     if char.isalpha() or char == "_":
         identifier_start = cursor
         cursor += 1
@@ -73,6 +72,7 @@ while cursor < len(text):
         cursor += 2
         continue
 
+    # single op and double op are both for arthematic overall
     if char in SingleOP:
         scanned_text.append(SingleOP[char])
         cursor += 1
@@ -85,9 +85,15 @@ while cursor < len(text):
 
     raise ValueError(f"Unknown char {char}. Line {line}.")
 
+print("Lexer successfully ending.")
+scanned_text.append("EOF")
+
 def ScannedText():
     return scanned_text
 
 
 def Cursor():
     return cursor
+
+print("---LEXER---", scanned_text)
+print("\n\n\n")
