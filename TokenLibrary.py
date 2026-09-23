@@ -1,8 +1,6 @@
-import sys
-
 class TokenType:
     # if,else,elif,loop,return,int,float,char,class,void,break,continue
-    # boolean,function, let, sizeof, const
+    # boolean, let, sizeof, const
     
     def __init__(self):
         self.Keyword()
@@ -19,14 +17,8 @@ class TokenType:
             "reps": "REPS", # expects a number after this
             "keep": "KEEP", # this is only used after reps
             # creates infinite loop
-            "func": "FUNCTION",
             "nil": "NILL",
             "delete": "DELETE",
-            "import": "IMPORT",
-            "return": "RETURN",
-            "break": "BREAK",
-            "continue": "CONTINUE",
-            "nothing": "NOTHING",
             "and": "AND",
             "or": "OR",
             "not": "NOT",
@@ -34,7 +26,6 @@ class TokenType:
             "false": "FALSE",
             "let": "LET",
             "show": "PRINT",
-
 
             # data types
             "int": "INTEGER",

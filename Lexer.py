@@ -6,16 +6,9 @@ NonLetters = TokenType.NonLetter()
 SingleOP = TokenType.SOP()
 DoubleOP = TokenType.DOP()
 
-
-text = '''if (2 > 1) {
-    show "oh yes 2"
-} elif (1 > 2) {
-    show "wait what?"
-} else {
-    show "everything failed man"
-}
+text = '''
+2 > 1 and 3 > 1
 '''
-
 
 line = 1
 scanned_text = []
@@ -99,7 +92,6 @@ scanned_text.append("EOF")
 
 def ScannedText():
     return scanned_text
-
 
 def Cursor():
     return cursor

@@ -1,6 +1,5 @@
 import Lexer
 tokenized_text = Lexer.ScannedText()
-
 p_cursor = 0
 
 def advance():
@@ -41,20 +40,15 @@ def parse_show():
 def parse_let():
     expect("LET")
     #let int x = 10;
-    print("expected DATATYPE ----", current())
-
     if current() in ("INTEGER", "FLOAT", "BOOLEAN", "STRING"):
         advance()
-        print("expected IDENTIFIER",current())
 
         variable = current() # identifier
         advance()
 
-        print("expected EQUAL_TO", current())
         expect("EQUAL_TO")
 
-        
-        print("expected VALUE", current())
+
         var_value = []
 
         if current().startswith(("INTEGER:", "FLOAT:")):
@@ -97,21 +91,16 @@ def parse_loop():
     loop_work = []
 
     while current() != "RCURLY":
-
         if current() == "END_OF_STATEMENT" or current() == "COMMENT":
             advance()
             continue
 
-        if current() == "PRINT":
-            loop_work.append(parse_show())
-            continue
+        if current() == "EOF":
+            break
 
-        if current() == "LET":
-            loop_work.append(parse_let())
-            continue
-
-        if current() == "LOOP":
-            loop_work.append(parse_loop())
+        parsed = parse_all()
+        if parsed is not None:
+            loop_work.append(parsed)
             continue
 
         raise SyntaxError(f"Unexpected token inside loop: {current()}")
@@ -247,7 +236,6 @@ def parse_expression():
         "value": parsed_exp
     }
 
-
 def parse_if():
     expect("IF")
     if_condition = []
@@ -267,8 +255,6 @@ def parse_if():
                 advance()
         advance()
 
-    print(current())
-    print(if_condition)
 
     # language rule
     # if (condition) {statement}
@@ -277,26 +263,19 @@ def parse_if():
     expect("LCURLY")
     if_statement.append("LCURLY")
     while current() != "RCURLY":
-
-        if current() == "IF":
-            if_statement.append(parse_if())
-            continue
-
-        if current() == "LET":
-            if_statement.append(parse_let())
-            continue
-
-        if current() == "PRINT":
-            if_statement.append(parse_show())
-            continue
-
-        if current() == "LOOP":
-            if_statement.append(parse_loop())
-            continue
-
         if current() == "END_OF_STATEMENT":
             advance()
             continue
+
+        if current() == "EOF":
+            break
+
+        parsed = parse_all()
+        if parsed is not None:
+            if_statement.append(parsed)
+            continue
+
+        raise SyntaxError(f"Unexpected token inside if statement: {current()}")
 
     expect("RCURLY")
     if_statement.append("RCURLY")
@@ -328,32 +307,23 @@ def parse_if():
         elif_statement.append("LCURLY")
 
         while current() != "RCURLY":
-
-            if current() == "IF":
-                elif_statement.append(parse_if())
-                continue
-
-            if current() == "LET":
-                elif_statement.append(parse_let())
-                continue
-
-            if current() == "PRINT":
-                elif_statement.append(parse_show())
-                continue
-
-            if current() == "LOOP":
-                elif_statement.append(parse_loop())
-                continue
-
             if current() == "END_OF_STATEMENT":
                 advance()
                 continue
 
+            if current() == "EOF":
+                break
+
+            parsed = parse_all()
+            if parsed is not None:
+                elif_statement.append(parsed)
+                continue
+
+            raise SyntaxError(f"Unexpected token inside elif statement: {current()}")
+
         expect("RCURLY")
         elif_statement.append("RCURLY")
 
-    print("elif condition", elif_condition)
-    print("elif statement", elif_statement)
 
     else_available = False
     if current() == "ELSE":
@@ -366,30 +336,22 @@ def parse_if():
             else_statement.append(current())
             advance()
             while current() != "RCURLY":
-                if current() == "IF":
-                    else_statement.append(parse_if())
-                    continue
-
-                if current() == "LET":
-                    else_statement.append(parse_let())
-                    continue
-
-                if current() == "PRINT":
-                    else_statement.append(parse_show())
-                    continue
-
-                if current() == "LOOP":
-                    else_statement.append(parse_loop())
-                    continue
-
                 if current() == "END_OF_STATEMENT":
                     advance()
                     continue
 
+                if current() == "EOF":
+                    break
+
+                parsed = parse_all()
+                if parsed is not None:
+                    else_statement.append(parsed)
+                    continue
+
+                raise SyntaxError(f"Unexpected token inside else statement: {current()}")
+
             expect("RCURLY")
             else_statement.append("RCURLY")
-
-    print("else statement:",else_statement)
 
 
     pivot = (1 if elif_availabe else 0) | (2 if else_available else 0)
@@ -430,50 +392,117 @@ def parse_if():
             "else statement": else_statement
         }
 
+def parse_nil():
+    expect('NILL')
+    return 'EMPTY_VALUE'
 
+def parse_delete():
+    expect('DELETE')
+    return f'DELETE: {current()}'
+
+def parse_and():
+    expect('AND')
+    and_wrap = []
+    advance_by(-2)
+    while current() != 'END_OF_STATEMENT':
+        and_wrap.append(current())
+        advance_by(-1)
+    while current() != 'AND': advance()
+    while current() != 'END_OF_STATEMENT':
+        and_wrap.append(current())
+        advance()
+    return and_wrap
+
+def parse_or():
+    expect('OR')
+    or_wrap = [] 
+    advance_by(-2)
+    while current() != 'END_OF_STATEMENT':
+        or_wrap.append(current())
+        advance_by(-1)
+    while current() != 'OR': advance()
+    while current() != 'END_OF_STATEMENT':
+        or_wrap.append(current())
+        advance()
+    return or_wrap
+
+def parse_not():
+    expect('NOT')
+    not_wrap = [] 
+    advance_by(-2)
+    while current() != 'END_OF_STATEMENT':
+        not_wrap.append(current())
+        advance_by(-1)
+    while current() != 'NOT': advance()
+    while current() != 'END_OF_STATEMENT':
+        not_wrap.append(current())
+        advance()
+    return not_wrap
+
+def parse_true():
+    expect('TRUE')
+    return 'TRUE'
+
+def parse_false():
+    expect('FALSE')
+    return 'FALSE'
+
+def parse_all():
+    token = current()
+
+    if token == "PRINT":
+        return parse_show()
+
+    if token == "LET":
+        return parse_let()
+
+    if token == "LOOP":
+        return parse_loop()
+
+    if token == "IF":
+        return parse_if()
+
+    if token == "END_OF_STATEMENT" or token == "COMMENT":
+        advance()
+        return None
+
+    if token == "EOF":
+        return None
+
+    if token == 'NILL':
+        return parse_nil()
+
+    if token == 'DELETE':
+        return parse_delete()
+
+    if token == 'AND':
+        return parse_and()
+
+    if token == 'OR':
+        return parse_or()
+
+    if token == 'NOT':
+        return parse_not()
+
+    if token == 'TRUE':
+        return parse_true()
+
+    if token == 'FALSE':
+        return parse_false()
+
+    raise SyntaxError(f"Unexpected Token:\n{token}")
 
 AST = []
 
 # main loop
 while p_cursor < len(tokenized_text):
-
-    if tokenized_text[p_cursor] == "PRINT":
-        AST.append(parse_show())
-
-    elif tokenized_text[p_cursor] == "LET":
-        AST.append(parse_let())
-
-    elif tokenized_text[p_cursor] == "LOOP":
-        AST.append(parse_loop())
-
-    elif tokenized_text[p_cursor] == "END_OF_STATEMENT" or tokenized_text[p_cursor] == "COMMENT":
-        advance()
-
-    elif tokenized_text[p_cursor] == "EOF":
+    if current() == "EOF":
         print("Parser successfully ending.")
         break
 
-    elif tokenized_text[p_cursor].startswith(("INTEGER:", "FLOAT:")):
-        if tokenized_text[p_cursor + 1] in Lexer.SingleOP:
-            AST.append(parse_expression())
-        else:
-            if tokenized_text[p_cursor - 1] == "EQUAL_TO":
-                if tokenized_text[p_cursor - 3] in ("INTEGER", "FLOAT", "BOOLEAN", "STRING"):
-                    if tokenized_text[p_cursor - 4] == "LET":
-                        pass
-            else: raise SyntaxError(
-                "undefined number without a parent"
-            )
-            advance()
+    parsed = parse_all()
+    if parsed is not None:
+        AST.append(parsed)
 
-    elif tokenized_text[p_cursor] == "IF":
-        AST.append(parse_if())
-
-    else:
-        raise SyntaxError(
-            f"Unexpected Token:\n{current()}"
-        )
-
-
-print("---PARSER---", AST)
+print(f'<---PARSER---> raw ast: {AST}')
 print("\n\n\n")
