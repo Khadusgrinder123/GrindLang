@@ -31,7 +31,6 @@ def parse_show():
     # show "hellow";
     value = current()
     advance()
-    
     expect("END_OF_STATEMENT")
 
     return {
@@ -56,9 +55,22 @@ def parse_let():
 
         
         print("expected VALUE", current())
-        var_value = current()
+        var_value = []
 
-        advance()
+        if current().startswith(("INTEGER:", "FLOAT:")):
+            if tokenized_text[p_cursor + 1] in Lexer.SingleOP:
+                var_value.append(parse_expression())
+            else:
+                if tokenized_text[p_cursor - 1] == "EQUAL_TO":
+                    if tokenized_text[p_cursor - 3] in ("INTEGER", "FLOAT", "BOOLEAN", "STRING"):
+                        if tokenized_text[p_cursor - 4] == "LET":
+                            var_value.append(current())
+                else: raise SyntaxError(
+                    "undefined number without a parent"
+                )
+                advance()
+
+
         expect("END_OF_STATEMENT")
 
         return {
@@ -236,6 +248,188 @@ def parse_expression():
     }
 
 
+def parse_if():
+    expect("IF")
+    if_condition = []
+    if_statement = []
+    expect("LPAREN")
+    if_condition.append("LPAREN")
+
+    while current() != "LCURLY":
+        if current() == "EOF": break
+        if_condition.append(current())
+        if current() == "LPAREN":
+            if_condition.append(current()) #
+            advance()
+            while current() != "RPAREN":
+                if current() == "EOF": break
+                if_condition.append(current())
+                advance()
+        advance()
+
+    print(current())
+    print(if_condition)
+
+    # language rule
+    # if (condition) {statement}
+    # a "{" is immediate after condition's ")"
+
+    expect("LCURLY")
+    if_statement.append("LCURLY")
+    while current() != "RCURLY":
+
+        if current() == "IF":
+            if_statement.append(parse_if())
+            continue
+
+        if current() == "LET":
+            if_statement.append(parse_let())
+            continue
+
+        if current() == "PRINT":
+            if_statement.append(parse_show())
+            continue
+
+        if current() == "LOOP":
+            if_statement.append(parse_loop())
+            continue
+
+        if current() == "END_OF_STATEMENT":
+            advance()
+            continue
+
+    expect("RCURLY")
+    if_statement.append("RCURLY")
+
+    elif_availabe = False
+    if current() == "ELSE_IF": # we want elif right after "}"
+        elif_condition = []
+        elif_statement = []
+        elif_availabe = True
+        advance()
+
+    if elif_availabe:
+        expect("LPAREN")
+        elif_condition.append("LPAREN")
+
+        while current() != "LCURLY":
+            if current() == "EOF": break
+            elif_condition.append(current())
+            if current() == "LPAREN":
+                elif_condition.append(current())
+                advance()
+                while current() != "RPAREN":
+                    if current() == "EOF": break
+                    elif_condition.append(current())
+                    advance()
+            advance()
+
+        expect("LCURLY")
+        elif_statement.append("LCURLY")
+
+        while current() != "RCURLY":
+
+            if current() == "IF":
+                elif_statement.append(parse_if())
+                continue
+
+            if current() == "LET":
+                elif_statement.append(parse_let())
+                continue
+
+            if current() == "PRINT":
+                elif_statement.append(parse_show())
+                continue
+
+            if current() == "LOOP":
+                elif_statement.append(parse_loop())
+                continue
+
+            if current() == "END_OF_STATEMENT":
+                advance()
+                continue
+
+        expect("RCURLY")
+        elif_statement.append("RCURLY")
+
+    print("elif condition", elif_condition)
+    print("elif statement", elif_statement)
+
+    else_available = False
+    if current() == "ELSE":
+        else_available = True
+        else_statement = []
+        advance()
+
+    if else_available:
+        if current() == "LCURLY":
+            else_statement.append(current())
+            advance()
+            while current() != "RCURLY":
+                if current() == "IF":
+                    else_statement.append(parse_if())
+                    continue
+
+                if current() == "LET":
+                    else_statement.append(parse_let())
+                    continue
+
+                if current() == "PRINT":
+                    else_statement.append(parse_show())
+                    continue
+
+                if current() == "LOOP":
+                    else_statement.append(parse_loop())
+                    continue
+
+                if current() == "END_OF_STATEMENT":
+                    advance()
+                    continue
+
+            expect("RCURLY")
+            else_statement.append("RCURLY")
+
+    print("else statement:",else_statement)
+
+
+    pivot = (1 if elif_availabe else 0) | (2 if else_available else 0)
+
+    # 0 = Neither
+    # 1 = Elif only
+    # 2 = Else only
+    # 3 = Both
+
+    if pivot == 0: # neither
+            return {
+            "type": "IF",
+            "condition": if_condition,
+            "statement": if_statement
+        }
+    if pivot == 1: # elif only
+            return {
+            "type": "IF",
+            "condition": if_condition,
+            "statement": if_statement,
+            "elif condition": elif_condition,
+            "elif statement": elif_statement
+        }
+    if pivot == 2: # else only
+            return {
+            "type": "IF",
+            "condition": if_condition,
+            "statement": if_statement,
+            "else statement": else_statement
+        }
+    if pivot == 3: # both
+            return {
+            "type": "IF",
+            "condition": if_condition,
+            "statement": if_statement,
+            "elif condition": elif_condition,
+            "elif statement": elif_statement,
+            "else statement": else_statement
+        }
+
 
 
 AST = []
@@ -263,7 +457,6 @@ while p_cursor < len(tokenized_text):
         if tokenized_text[p_cursor + 1] in Lexer.SingleOP:
             AST.append(parse_expression())
         else:
-            print("its a number")
             if tokenized_text[p_cursor - 1] == "EQUAL_TO":
                 if tokenized_text[p_cursor - 3] in ("INTEGER", "FLOAT", "BOOLEAN", "STRING"):
                     if tokenized_text[p_cursor - 4] == "LET":
@@ -273,13 +466,8 @@ while p_cursor < len(tokenized_text):
             )
             advance()
 
-    elif tokenized_text[p_cursor] == "IMPORT":
-        advance()
-        if tokenized_text[p_cursor].startswitch("STRING:"):
-            library = current()
-            advance()
-            expect("END_OF_STATEMENT")
-        else: raise SyntaxError("invalid import")
+    elif tokenized_text[p_cursor] == "IF":
+        AST.append(parse_if())
 
     else:
         raise SyntaxError(

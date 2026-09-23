@@ -1,3 +1,5 @@
+import sys
+
 class TokenType:
     # if,else,elif,loop,return,int,float,char,class,void,break,continue
     # boolean,function, let, sizeof, const

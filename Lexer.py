@@ -7,7 +7,16 @@ SingleOP = TokenType.SOP()
 DoubleOP = TokenType.DOP()
 
 
-text = '''import "this.grind"'''
+text = '''if (2 > 1) {
+    show "oh yes 2"
+} elif (1 > 2) {
+    show "wait what?"
+} else {
+    show "everything failed man"
+}
+'''
+
+
 line = 1
 scanned_text = []
 cursor = 0
