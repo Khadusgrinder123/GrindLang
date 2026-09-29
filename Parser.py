@@ -1,6 +1,8 @@
-import Lexer
+import NewLexer as Lexer
 tokenized_text = Lexer.ScannedText()
 p_cursor = 0
+variables = {}
+
 
 def advance():
     global p_cursor
@@ -12,6 +14,17 @@ def advance_by(skip):
 
 def current():
     return tokenized_text[p_cursor]
+
+def ensure_variable_defined(name):
+    if name not in variables:
+        raise SyntaxError(f"Undefined variable: {name}")
+
+def resolve_variable(token):
+    if token.startswith("IDENTIFIER:"):
+        name = token.removeprefix("IDENTIFIER:")
+        ensure_variable_defined(name)
+        return variables[name]
+    return token
 
 def expect(token):
     if current() != token:
@@ -28,14 +41,11 @@ def parse_show():
     expect("PRINT")
 
     # show "hellow";
-    value = current()
+    value = resolve_variable(current())
     advance()
     expect("END_OF_STATEMENT")
 
-    return {
-        "type": "PRINT",
-        "value": value
-    }
+    return f"""PRINT:{value}"""
 
 def parse_let():
     expect("LET")
@@ -49,29 +59,19 @@ def parse_let():
         expect("EQUAL_TO")
 
 
-        var_value = []
+        value = resolve_variable(current())
+        if value.startswith(("INTEGER:", "FLOAT:")) and tokenized_text[p_cursor + 1] in Lexer.SingleOP:
+            value = parse_expression_c()
+        else:
+            advance()
 
-        if current().startswith(("INTEGER:", "FLOAT:")):
-            if tokenized_text[p_cursor + 1] in Lexer.SingleOP:
-                var_value.append(parse_expression())
-            else:
-                if tokenized_text[p_cursor - 1] == "EQUAL_TO":
-                    if tokenized_text[p_cursor - 3] in ("INTEGER", "FLOAT", "BOOLEAN", "STRING"):
-                        if tokenized_text[p_cursor - 4] == "LET":
-                            var_value.append(current())
-                else: raise SyntaxError(
-                    "undefined number without a parent"
-                )
-                advance()
-
-
+        var_value = [value]
         expect("END_OF_STATEMENT")
 
-        return {
-            "type": "VARIABLE_DECLARATION",
-            "Variable": variable,
-            "VariableValue": var_value
-        }
+        variable_name = variable.removeprefix("IDENTIFIER:")
+        variables[variable_name] = value
+
+        return f"""VARIABLE_DECLARATION:{variable}:{var_value}"""
     else: raise SyntaxError (f"Expected int,float,bool,str but got {current()}")
 
 def parse_loop():
@@ -107,17 +107,28 @@ def parse_loop():
 
     expect("RCURLY")
 
-    return {
-        "type": "LOOP",
-        "work": loop_work,
-        "reps": reps
-    }
+    if reps == 'KEEP':
+        if 'STOP' in loop_work:
+            pass
+        if 'STOP' not in loop_work:
+            print("Sensitive loop. Uncontrolled Infinite loop")
 
+    if reps != 'KEEP':
+    # loop_work, rep
+        return f"""LOOP:{loop_work}:{reps.removeprefix('INTEGER:')}"""
+    if reps == 'KEEP': 
+        return f"""LOOP:{loop_work}:{reps}"""
+
+
+# oh my god man this is useless expression parsing is useless
+# my initial plan was conversion to x86-64 assembly
+# i changed my plan later to c and now this is useless
+# more like its gonna increase my work!
 def parse_expression():    
     expression = []
 
     while current() not in ("END_OF_STATEMENT", "EOF"):
-        expression.append(current())
+        expression.append(resolve_variable(current()))
         advance()
 
     number_pos = []
@@ -169,72 +180,99 @@ def parse_expression():
             return expression[op_pos[0] + dna - 1]
         def rhs(dna):
             return expression[op_pos[0] + dna + 1]
-    
-        for i in range(len(expression)):
+
+        if len(op_pos) == 1:
+                    parsed_exp.append(f"LHS:{expression[op_pos[pos] - 1]};OP:{expression[op_pos[pos]]};RHS:{expression[op_pos[pos] + 1]}")
+        
+        if len(op_pos) > 1:
+            for i in range(len(expression)):
             # 3-2-3
-
-            if expression[op_pos[pos] + initial_dna] == "EOE": break
-
-            parsed_exp.append(f"STARTING: {expression[op_pos[0] - 1]};")
-
-            # for minus
-            if expression[op_pos[pos]] == "-":
-                parsed_exp.append(f"OP: {expression[op_pos[pos]]};")
-                if len(op_pos) == 1:
-                    parsed_exp.append(f"RHS: {rhs(0)}")
-                if len(op_pos) == 0: raise SyntaxError("no operator found. Expected atleast 1")
-                if len(op_pos) > 1:
-                    # for higher or equal power
-                    if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "sec_op":
-                        parsed_exp.append(f"ST- LHS: {lhs(initial_dna)}; OP:{expression[op_pos[pos] + initial_dna]}; RHS: {rhs(initial_dna)}")
-                    # for lower power
-                    if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "first_op":
-                        parsed_exp.append(f"RHS: {lhs(initial_dna)}; OP: {expression[op_pos[pos] + initial_dna]}; LHS: {rhs(initial_dna)}")
-
-            # for addition
-            if expression[op_pos[pos]] == "+":
-                parsed_exp.append(f"OP: {expression[op_pos[pos]]};")
-                if len(op_pos) == 1:
-                    parsed_exp.append(f"RHS: {rhs(0)}")
-                if len(op_pos) == 0: raise SyntaxError("no operator found. Expected atleast 1")
-                if len(op_pos) > 1:
-                    if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "sec_op":
-                        parsed_exp.append(f"ST- LHS: {lhs(initial_dna)}; OP:{expression[op_pos[pos] + initial_dna]}; RHS: {rhs(initial_dna)}")
-                    elif check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "first_op":
-                        parsed_exp.append(f"C- RHS: {lhs(initial_dna)}; OP: {expression[op_pos[pos] + initial_dna]}; LHS: {rhs(initial_dna)}")
-
-            # for multiplication
-            if expression[op_pos[pos]] == "*":
-                parsed_exp.append(f"OP: {expression[op_pos[pos]]};")
-                if len(op_pos) == 1:
-                    parsed_exp.append(f"RHS: {rhs(0)}")
-                if len(op_pos) == 0: raise SyntaxError("no operator found. Expected atleast 1")
-                if len(op_pos) > 1:
-                    if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "sec_op":
-                        parsed_exp.append(f"ST- LHS: {lhs(initial_dna)}; OP:{expression[op_pos[pos] + initial_dna]}; RHS: {rhs(initial_dna)}")
-                    if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "first_op":
-                        parsed_exp.append(f"C- RHS: {lhs(initial_dna)}; OP: {expression[op_pos[pos] + initial_dna]}; LHS: {rhs(initial_dna)}")
-
-            # for division
-            if expression[op_pos[pos]] == "/":
-                parsed_exp.append(f"OP: {expression[op_pos[pos]]};")
-                if len(op_pos) == 1:
-                    parsed_exp.append(f"RHS: {rhs(0)}")
-                if len(op_pos) == 0: raise SyntaxError("no operator found. Expected atleast 1")
-                if len(op_pos) > 1:
-                    if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "sec_op":
-                        parsed_exp.append(f"ST- LHS: {lhs(initial_dna)}; OP:{expression[op_pos[pos] + initial_dna]}; RHS: {rhs(initial_dna)}")
-                    if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "first_op":
-                        parsed_exp.append(f"C- RHS: {lhs(initial_dna)}; OP: {expression[op_pos[pos] + initial_dna]}; LHS: {rhs(initial_dna)}")
-
-            initial_dna += 2
+                if expression[op_pos[pos] + initial_dna] == "EOE": break
+                parsed_exp.append(f"STARTING:{expression[op_pos[0] - 1]};")
+                # for minus
+                if expression[op_pos[pos]] == "-":
+                    parsed_exp.append(f"OP:{expression[op_pos[pos]]};")
+                    if len(op_pos) == 1:
+                        parsed_exp.append(f"RHS:{rhs(0)}")
+                    if len(op_pos) == 0: raise SyntaxError("no operator found. Expected atleast 1")
+                    if len(op_pos) > 1:
+                        # for higher or equal power
+                        if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "sec_op":
+                            # st = sum of this term
+                            parsed_exp.append(f"ST-LHS:{lhs(initial_dna)};OP:{expression[op_pos[pos] + initial_dna]};RHS:{rhs(initial_dna)}")
+                        # for lower power
+                        if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "first_op":
+                            parsed_exp.append(f"RHS:{lhs(initial_dna)};OP:{expression[op_pos[pos] + initial_dna]};LHS:{rhs(initial_dna)}")
+                # for addition
+                if expression[op_pos[pos]] == "+":
+                    parsed_exp.append(f"OP:{expression[op_pos[pos]]};")
+                    if len(op_pos) == 1:
+                        parsed_exp.append(f"RHS:{rhs(0)}")
+                    if len(op_pos) == 0: raise SyntaxError("no operator found. Expected atleast 1")
+                    if len(op_pos) > 1:
+                        # st - sum of this term. Due to higher priority
+                        if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "sec_op":
+                            parsed_exp.append(f"ST-LHS:{lhs(initial_dna)};OP:{expression[op_pos[pos] + initial_dna]};RHS:{rhs(initial_dna)}")
+                            # c- means continuation. This is for lower priority operator
+                        elif check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "first_op":
+                            parsed_exp.append(f"C-RHS:{lhs(initial_dna)};OP:{expression[op_pos[pos] + initial_dna]};LHS:{rhs(initial_dna)}")
+                            
+                            # in any case 'st-' will have more priority then 'c
+                            # c rhs = st rhs. so you can skip c rhs 
+                            # only important are
+                            # starting once, c lhs, st rhs
+                            # or in any case if rhs is before lhs then thats a duplicate
+                            # of before rhs
+                            # most trustable thing is lhs
+                            # lhs is almost new unless user typed same number more than 1 time
+                            # dang i have to test my own system to identify what it does
+                            # this thing is super complex ngl
+                            
+                # for multiplication
+                if expression[op_pos[pos]] == "*":
+                    parsed_exp.append(f"OP:{expression[op_pos[pos]]};")
+                    if len(op_pos) == 1:
+                        parsed_exp.append(f"RHS:{rhs(0)}")
+                    if len(op_pos) == 0: raise SyntaxError("no operator found. Expected atleast 1")
+                    if len(op_pos) > 1:
+                        if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "sec_op":
+                            parsed_exp.append(f"ST-LHS:{lhs(initial_dna)};OP:{expression[op_pos[pos] + initial_dna]};RHS:{rhs(initial_dna)}")
+                        if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "first_op":
+                            parsed_exp.append(f"C-RHS:{lhs(initial_dna)};OP:{expression[op_pos[pos] + initial_dna]};LHS:{rhs(initial_dna)}")
+                # for division
+                if expression[op_pos[pos]] == "/":
+                    parsed_exp.append(f"OP:{expression[op_pos[pos]]};")
+                    if len(op_pos) == 1:
+                        parsed_exp.append(f"RHS:{rhs(0)}")
+                    if len(op_pos) == 0: raise SyntaxError("no operator found. Expected atleast 1")
+                    if len(op_pos) > 1:
+                        if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "sec_op":
+                            parsed_exp.append(f"ST-LHS:{lhs(initial_dna)};OP:{expression[op_pos[pos] + initial_dna]};RHS:{rhs(initial_dna)}")
+                        if check_power(expression[op_pos[pos]], expression[op_pos[pos] + initial_dna]) == "first_op":
+                            parsed_exp.append(f"C-RHS:{lhs(initial_dna)};OP:{expression[op_pos[pos] + initial_dna]};LHS:{rhs(initial_dna)}")
+                initial_dna += 2
+                # oh my god only god knows how and what i made
+                # i am foreing to my own code
+                # ts more verbose than c++
 
     check_LR()
 
-    return {
-        "type": "EXPRESSION",
-        "value": parsed_exp
-    }
+    return f"""EXPRESSION:{parsed_exp}"""
+# sorry i am removing this
+# this wont be used anymore but will still stay in the code
+# its a proof (i dont know what)
+
+
+def parse_expression_c():
+    expression = ''
+    while current() != 'END_OF_STATEMENT':
+        expression += current()
+        advance()
+        if current() == 'EOF':
+            break
+    return f'EXPRESSION: {expression}'
+
+
 
 def parse_if():
     expect("IF")
@@ -245,13 +283,13 @@ def parse_if():
 
     while current() != "LCURLY":
         if current() == "EOF": break
-        if_condition.append(current())
+        if_condition.append(resolve_variable(current()))
         if current() == "LPAREN":
             if_condition.append(current()) #
             advance()
             while current() != "RPAREN":
                 if current() == "EOF": break
-                if_condition.append(current())
+                if_condition.append(resolve_variable(current()))
                 advance()
         advance()
 
@@ -293,13 +331,13 @@ def parse_if():
 
         while current() != "LCURLY":
             if current() == "EOF": break
-            elif_condition.append(current())
+            elif_condition.append(resolve_variable(current()))
             if current() == "LPAREN":
                 elif_condition.append(current())
                 advance()
                 while current() != "RPAREN":
                     if current() == "EOF": break
-                    elif_condition.append(current())
+                    elif_condition.append(resolve_variable(current()))
                     advance()
             advance()
 
@@ -362,82 +400,44 @@ def parse_if():
     # 3 = Both
 
     if pivot == 0: # neither
-            return {
-            "type": "IF",
-            "condition": if_condition,
-            "statement": if_statement
-        }
+            #f""""""
+            # ifcon,state
+            return f"""IF:{if_condition}:{if_statement}"""
     if pivot == 1: # elif only
-            return {
-            "type": "IF",
-            "condition": if_condition,
-            "statement": if_statement,
-            "elif condition": elif_condition,
-            "elif statement": elif_statement
-        }
+            #if,elif,con,state
+            return f"""IF:{if_condition}:{if_statement}:ELIF:{elif_condition}:{elif_statement}"""
     if pivot == 2: # else only
-            return {
-            "type": "IF",
-            "condition": if_condition,
-            "statement": if_statement,
-            "else statement": else_statement
-        }
+            #if,else,con,state,state
+            return f"""IF:{if_condition}:{if_statement}:ELSE:{else_statement}"""
     if pivot == 3: # both
-            return {
-            "type": "IF",
-            "condition": if_condition,
-            "statement": if_statement,
-            "elif condition": elif_condition,
-            "elif statement": elif_statement,
-            "else statement": else_statement
-        }
+            #if,elif,cond,state,elsestate
+            return f"""IF:{if_condition}:{if_statement}:ELIF:{elif_condition}:{elif_statement}:ELSE:{else_statement}"""
 
-def parse_nil():
-    expect('NILL')
-    return 'EMPTY_VALUE'
+def parse_stop():
+    expect('STOP')
+    return 'STOP'
 
-def parse_delete():
-    expect('DELETE')
-    return f'DELETE: {current()}'
+def parse_assignment():
+    variable = current().removeprefix('IDENTIFIER:')
+    ensure_variable_defined(variable)
+    advance()
 
-def parse_and():
-    expect('AND')
-    and_wrap = []
-    advance_by(-2)
-    while current() != 'END_OF_STATEMENT':
-        and_wrap.append(current())
-        advance_by(-1)
-    while current() != 'AND': advance()
-    while current() != 'END_OF_STATEMENT':
-        and_wrap.append(current())
-        advance()
-    return and_wrap
+    if current() not in ('EQUAL_TO', 'PLUS_EQUAL', 'MINUS_EQUAL', 'MUL_EQUAL', 'DIV_EQUAL'):
+        raise SyntaxError(f"Expected assignment operator after variable, got {current()}")
 
-def parse_or():
-    expect('OR')
-    or_wrap = [] 
-    advance_by(-2)
-    while current() != 'END_OF_STATEMENT':
-        or_wrap.append(current())
-        advance_by(-1)
-    while current() != 'OR': advance()
-    while current() != 'END_OF_STATEMENT':
-        or_wrap.append(current())
-        advance()
-    return or_wrap
+    op = current()
+    advance()
 
-def parse_not():
-    expect('NOT')
-    not_wrap = [] 
-    advance_by(-2)
-    while current() != 'END_OF_STATEMENT':
-        not_wrap.append(current())
-        advance_by(-1)
-    while current() != 'NOT': advance()
-    while current() != 'END_OF_STATEMENT':
-        not_wrap.append(current())
-        advance()
-    return not_wrap
+    value = resolve_variable(current())
+    advance()
+    expect('END_OF_STATEMENT')
+
+    if op == 'EQUAL_TO' and (
+        value.startswith(("INTEGER:", "FLOAT:", "STRING:")) or value in ("TRUE", "FALSE")
+    ):
+        variables[variable] = value
+
+    return f"ASSIGNMENT:{variable}:{op}:{value}"
 
 def parse_true():
     expect('TRUE')
@@ -469,20 +469,11 @@ def parse_all():
     if token == "EOF":
         return None
 
-    if token == 'NILL':
-        return parse_nil()
+    if token == 'STOP':
+        return parse_stop()
 
-    if token == 'DELETE':
-        return parse_delete()
-
-    if token == 'AND':
-        return parse_and()
-
-    if token == 'OR':
-        return parse_or()
-
-    if token == 'NOT':
-        return parse_not()
+    if token.startswith('IDENTIFIER:'):
+        return parse_assignment()
 
     if token == 'TRUE':
         return parse_true()
@@ -505,4 +496,7 @@ while p_cursor < len(tokenized_text):
         AST.append(parsed)
 
 print(f'<---PARSER---> raw ast: {AST}')
-print("\n\n\n")
+print("\n")
+
+def RawAST():
+    return AST

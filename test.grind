@@ -1,0 +1,28 @@
+show "Hello World"
+let int x = 10
+let float y = 4.2
+
+// this is a comment
+let float sum = 10 + 4.2
+show sum
+show x
+show y
+
+if (2 > 1) {
+    show "yes"
+} elif (2 = 1) {
+    show "what?"
+} else {
+    show "no"
+}
+
+loop {
+reps: 67;
+show "nice"
+}
+
+loop {
+reps: keep;
+show "boom"
+stop
+}
